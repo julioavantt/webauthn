@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Prueba WebAuthn</title>
+  </head>
+  <body>
+    <h1>Prueba WebAuthn</h1>
+    <button id="registerButton">Registrar</button>
+    <button id="authenticateButton">Autenticar</button>
+    <div id="output"></div>
+
+    <script>
+      const registerButton = document.getElementById("registerButton");
+      const authenticateButton = document.getElementById("authenticateButton");
+      const output = document.getElementById("output");
+
+      registerButton.addEventListener("click", async () => {
+        try {
+          const credential = await navigator.credentials.create({
+            publicKey: {
+              challenge: Uint8Array.from("random-challenge", (c) =>
+                c.charCodeAt(0)
+              ),
+              rp: { name: "Mi Sitio Web" },
+              user: {
+                id: Uint8Array.from("user-id", (c) => c.charCodeAt(0)),
+                name: "Usuario de prueba",
+                displayName: "Usuario de prueba",
+              },
+              pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256
+              authenticatorSelection: {
+                requireResidentKey: false,
+                userVerification: "preferred",
+              },
+            },
+          });
+          output.textContent = "Registro exitoso: " + credential.id;
+        } catch (error) {
+          output.textContent = "Error de registro: " + error;
+        }
+      });
+
+      authenticateButton.addEventListener("click", async () => {
+        try {
+          const credential = await navigator.credentials.get({
+            publicKey: {
+              challenge: Uint8Array.from("random-challenge", (c) =>
+                c.charCodeAt(0)
+              ),
+            },
+          });
+          output.textContent = "Autenticación exitosa: " + credential.id;
+        } catch (error) {
+          output.textContent = "Error de autenticación: " + error.message;
+        }
+      });
+    </script>
+  </body>
+</html>
