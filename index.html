@@ -1,59 +1,106 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Prueba WebAuthn</title>
-  </head>
-  <body>
-    <h1>Prueba WebAuthn</h1>
-    <button id="registerButton">Registrar</button>
-    <button id="authenticateButton">Autenticar</button>
-    <div id="output"></div>
+<html lang="es">
+ <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebAuthn</title>
+  <link rel="shortcut icon" href="./img/dot.png" type="image/x-icon" />
+  <link rel="stylesheet" href="style.css" />
+ </head>
+ <body>
+  <main>
+   <h1>WebAuthn</h1>
+   <div>
+    <button id="register">Credential Register</button>
+    <button id="authenticate">Authenticate</button>
+   </div>
+   <p id="status"></p>
+  </main>
+  <script>
+   // Funciones para codificar/decodificar Base64
+   function bufferToBase64(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+   }
 
-    <script>
-      const registerButton = document.getElementById("registerButton");
-      const authenticateButton = document.getElementById("authenticateButton");
-      const output = document.getElementById("output");
+   function base64ToBuffer(base64) {
+    const binary = atob(base64);
+    const buffer = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+     buffer[i] = binary.charCodeAt(i);
+    }
+    return buffer;
+   }
 
-      registerButton.addEventListener("click", async () => {
-        try {
-          const credential = await navigator.credentials.create({
-            publicKey: {
-              challenge: Uint8Array.from("random-challenge", (c) =>
-                c.charCodeAt(0)
-              ),
-              rp: { name: "Mi Sitio Web" },
-              user: {
-                id: Uint8Array.from("user-id", (c) => c.charCodeAt(0)),
-                name: "Usuario de prueba",
-                displayName: "Usuario de prueba",
-              },
-              pubKeyCredParams: [{ type: "public-key", alg: -7 }], // ES256
-              authenticatorSelection: {
-                requireResidentKey: false,
-                userVerification: "preferred",
-              },
-            },
-          });
-          output.textContent = "Registro exitoso: " + credential.id;
-        } catch (error) {
-          output.textContent = "Error de registro: " + error;
-        }
-      });
+   async function register() {
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+    const userId = crypto.getRandomValues(new Uint8Array(16));
 
-      authenticateButton.addEventListener("click", async () => {
-        try {
-          const credential = await navigator.credentials.get({
-            publicKey: {
-              challenge: Uint8Array.from("random-challenge", (c) =>
-                c.charCodeAt(0)
-              ),
-            },
-          });
-          output.textContent = "Autenticación exitosa: " + credential.id;
-        } catch (error) {
-          output.textContent = "Error de autenticación: " + error.message;
-        }
-      });
-    </script>
-  </body>
+    const publicKey = {
+     challenge,
+     rp: { name: "Ejemplo WebAuthn" },
+     user: {
+      id: userId,
+      name: "usuario@example.com",
+      displayName: "Usuario Ejemplo",
+     },
+     pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+     authenticatorSelection: {
+      residentKey: "preferred",
+      userVerification: "preferred",
+     },
+     timeout: 60000,
+    };
+
+    try {
+     const credential = await navigator.credentials.create({ publicKey });
+     document.getElementById("status").innerText =
+      "Registro exitoso: " + credential.id;
+
+     // Guardar el ID en Base64 para usar en la autenticación
+     const rawIdBase64 = bufferToBase64(credential.rawId);
+     localStorage.setItem("webauthn_credential_id", rawIdBase64);
+    } catch (err) {
+     document.getElementById("status").innerText =
+      "Error en el registro: " + err;
+    }
+   }
+
+   async function authenticate() {
+    const idBase64 = localStorage.getItem("webauthn_credential_id");
+    if (!idBase64) {
+     document.getElementById("status").innerText =
+      "No hay credencial registrada";
+     return;
+    }
+
+    const idBuffer = base64ToBuffer(idBase64);
+    const challenge = crypto.getRandomValues(new Uint8Array(32));
+
+    const publicKey = {
+     challenge,
+     allowCredentials: [
+      {
+       id: idBuffer,
+       type: "public-key",
+      },
+     ],
+     timeout: 60000,
+    };
+
+    try {
+     const assertion = await navigator.credentials.get({ publicKey });
+     document.getElementById("status").innerText =
+      "Autenticación exitosa: " + assertion.id;
+    } catch (err) {
+     document.getElementById("status").innerText =
+      "Error en la autenticación: " + err;
+    }
+   }
+
+   document.getElementById("register").addEventListener("click", register);
+   document
+    .getElementById("authenticate")
+    .addEventListener("click", authenticate);
+  </script>
+ </body>
 </html>
