@@ -54,7 +54,7 @@
     try {
      const credential = await navigator.credentials.create({ publicKey });
      document.getElementById("status").innerText =
-      "Registro exitoso: " + credential.id;
+      "Register successful: " + credential.id;
 
      // Guardar el ID en Base64 para usar en la autenticación
      const rawIdBase64 = bufferToBase64(credential.rawId);
