@@ -11,7 +11,7 @@
   <main>
    <h1>WebAuthn</h1>
    <div>
-    <button id="register">Credential Register</button>
+    <button id="register">Register Credential</button>
     <button id="authenticate">Authenticate</button>
    </div>
    <p id="status"></p>
@@ -90,7 +90,7 @@
     try {
      const assertion = await navigator.credentials.get({ publicKey });
      document.getElementById("status").innerText =
-      "Autenticación exitosa: " + assertion.id;
+      "Authentication successful: " + assertion.id;
     } catch (err) {
      document.getElementById("status").innerText =
       "Error en la autenticación: " + err;
